@@ -42,7 +42,7 @@ It is **not** ESLint. It does not care about quotes, unused variables, or naming
 - Type-only imports counted as dependencies
 - Named layers with glob paths
 - `cannotDependOn` and `canOnlyDependOn` (not both on the same rule)
-- Circular dependency detection, reported once per unique cycle
+- Circular dependency detection, one cycle reported per strongly connected component
 - Exceptions with an optional expiry date
 - Source ignore globs and `exclude` patterns
 - Console report for humans, JSON report for machines

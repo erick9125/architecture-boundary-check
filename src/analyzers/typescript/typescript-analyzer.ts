@@ -3,7 +3,7 @@ import path from 'node:path';
 import * as ts from 'typescript';
 import type { DependencyAnalyzer, ProjectContext } from '../dependency-analyzer.js';
 import { DependencyGraph } from '../../core/graph/dependency-graph.js';
-import { toPosixPath } from '../../core/paths.js';
+import { normalizeRelativePath, toPosixPath } from '../../core/paths.js';
 import { extractImports } from './import-extractor.js';
 import { resolveImportedModule } from './module-resolver.js';
 import { isSourceFile } from './project-discovery.js';
@@ -17,8 +17,14 @@ export class TypeScriptDependencyAnalyzer implements DependencyAnalyzer {
     const host = ts.createCompilerHost(compilerOptions, true);
     const scriptTarget = compilerOptions.target ?? ts.ScriptTarget.ES2022;
 
+    // Only these files exist as far as the analysis is concerned. An import
+    // reaching outside the set — excluded, gitignored, or below another scan
+    // root — must not pull a file back in that the user asked to leave out.
+    const discovered = new Set<string>();
     for (const file of project.files) {
-      graph.addFile(toProjectRelative(file, projectRoot));
+      const relative = normalizeRelativePath(toProjectRelative(file, projectRoot));
+      discovered.add(relative);
+      graph.addFile(relative);
     }
 
     for (const file of project.files) {
@@ -52,7 +58,15 @@ export class TypeScriptDependencyAnalyzer implements DependencyAnalyzer {
           continue;
         }
 
-        graph.addDependency(sourceRelative, toProjectRelative(realTarget, projectRoot), {
+        const targetRelative = normalizeRelativePath(
+          toProjectRelative(realTarget, projectRoot),
+        );
+
+        if (!discovered.has(targetRelative)) {
+          continue;
+        }
+
+        graph.addDependency(sourceRelative, targetRelative, {
           specifier: extracted.specifier,
           kind: 'static-import',
           line: extracted.line,

@@ -43,4 +43,4 @@ export interface DependencyAnalyzer {
 
 Nodes are project-relative source files. Edges are resolved static imports and `export ... from` re-exports. External packages are omitted.
 
-Cycle detection uses DFS on the adjacency list and reports each unique cycle once.
+Cycle detection runs Tarjan's algorithm iteratively over the adjacency list and reports one representative cycle per strongly connected component. Every file in a component can reach every other one, so the component is the unit that has to be broken; enumerating every elementary cycle inside it is exponential in the worst case. The traversal is iterative because a dependency chain can be far deeper than the call stack.

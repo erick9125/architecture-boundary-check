@@ -1,6 +1,8 @@
-import path from 'node:path';
 import { TypeScriptDependencyAnalyzer } from './analyzers/typescript/typescript-analyzer.js';
-import { discoverSourceFiles } from './analyzers/typescript/project-discovery.js';
+import {
+  discoverSourceFiles,
+  resolveProjectRoot,
+} from './analyzers/typescript/project-discovery.js';
 import type { ArchitectureAnalysisResult } from './core/results/analysis-result.js';
 import { evaluateArchitecture } from './core/evaluate-architecture.js';
 import type { ArchitectureConfig } from './config/config.js';
@@ -14,7 +16,7 @@ export interface AnalyzeArchitectureOptions {
 export async function analyzeArchitecture(
   options: AnalyzeArchitectureOptions,
 ): Promise<ArchitectureAnalysisResult> {
-  const projectRoot = path.resolve(options.rootDirectory);
+  const projectRoot = await resolveProjectRoot(options.rootDirectory);
   const scanRoot = options.config.root ?? '.';
   const files = await discoverSourceFiles({
     projectRoot,

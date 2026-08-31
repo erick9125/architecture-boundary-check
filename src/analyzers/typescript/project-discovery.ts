@@ -55,65 +55,100 @@ export async function discoverSourceFiles(
   return files.sort();
 }
 
+/**
+ * Traverses the tree iteratively. A directory is enqueued only once, keyed by
+ * its real path, so a link pointing back at an ancestor cannot be walked
+ * forever. The queue also keeps the traversal off the call stack, which a
+ * deeply nested tree would otherwise exhaust.
+ */
 async function walk(
-  directory: string,
+  scanRoot: string,
   projectRoot: string,
   gitIgnore: IgnoreFilter,
   exclude: (file: string) => boolean,
   files: string[],
 ): Promise<void> {
-  let entries;
-  try {
-    entries = await fs.readdir(directory, { withFileTypes: true });
-  } catch {
+  const visited = new Set<string>();
+  const pending: string[] = [];
+  await enqueueDirectory(scanRoot, visited, pending);
+
+  for (
+    let directory = pending.pop();
+    directory !== undefined;
+    directory = pending.pop()
+  ) {
+    let entries;
+    try {
+      entries = await fs.readdir(directory, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      const fullPath = path.join(directory, entry.name);
+      const relative = toPosixPath(path.relative(projectRoot, fullPath));
+
+      if (relative === '' || relative.startsWith('..')) {
+        continue;
+      }
+
+      if (entry.isDirectory() && DEFAULT_SKIP_DIRECTORIES.has(entry.name)) {
+        continue;
+      }
+
+      if (gitIgnore.ignores(relative) || exclude(relative)) {
+        continue;
+      }
+
+      if (entry.isSymbolicLink()) {
+        const realPath = await fs.realpath(fullPath).catch(() => undefined);
+        if (!realPath || !isInsideRoot(realPath, projectRoot)) {
+          continue;
+        }
+
+        const stats = await fs.stat(realPath).catch(() => undefined);
+        if (!stats) {
+          continue;
+        }
+
+        if (stats.isDirectory()) {
+          await enqueueDirectory(realPath, visited, pending);
+        } else if (stats.isFile() && isSourceFile(realPath)) {
+          files.push(fullPath);
+        }
+
+        continue;
+      }
+
+      if (entry.isDirectory()) {
+        await enqueueDirectory(fullPath, visited, pending);
+        continue;
+      }
+
+      if (entry.isFile() && isSourceFile(entry.name)) {
+        files.push(fullPath);
+      }
+    }
+  }
+}
+
+/**
+ * Queues a directory unless its real path was already queued. Windows reports
+ * a junction as a plain directory rather than a link, so every directory is
+ * de-duplicated here, not only the ones that arrive through the symlink branch.
+ */
+async function enqueueDirectory(
+  directory: string,
+  visited: Set<string>,
+  pending: string[],
+): Promise<void> {
+  const key = await fs.realpath(directory).catch(() => directory);
+  if (visited.has(key)) {
     return;
   }
 
-  for (const entry of entries) {
-    const fullPath = path.join(directory, entry.name);
-    const relative = toPosixPath(path.relative(projectRoot, fullPath));
-
-    if (relative === '' || relative.startsWith('..')) {
-      continue;
-    }
-
-    if (entry.isDirectory() && DEFAULT_SKIP_DIRECTORIES.has(entry.name)) {
-      continue;
-    }
-
-    if (gitIgnore.ignores(relative) || exclude(relative)) {
-      continue;
-    }
-
-    if (entry.isSymbolicLink()) {
-      const realPath = await fs.realpath(fullPath).catch(() => undefined);
-      if (!realPath || !isInsideRoot(realPath, projectRoot)) {
-        continue;
-      }
-
-      const stats = await fs.stat(realPath).catch(() => undefined);
-      if (!stats) {
-        continue;
-      }
-
-      if (stats.isDirectory()) {
-        await walk(realPath, projectRoot, gitIgnore, exclude, files);
-      } else if (stats.isFile() && isSourceFile(realPath)) {
-        files.push(fullPath);
-      }
-
-      continue;
-    }
-
-    if (entry.isDirectory()) {
-      await walk(fullPath, projectRoot, gitIgnore, exclude, files);
-      continue;
-    }
-
-    if (entry.isFile() && isSourceFile(entry.name)) {
-      files.push(fullPath);
-    }
-  }
+  visited.add(key);
+  pending.push(directory);
 }
 
 export function isSourceFile(fileName: string): boolean {
@@ -136,6 +171,18 @@ async function loadGitIgnore(projectRoot: string): Promise<IgnoreFilter> {
   }
 
   return ig;
+}
+
+/**
+ * Canonical form of the directory the analysis is rooted at.
+ *
+ * Discovery reports real paths, so every other stage has to measure against the
+ * real root too. Passing the uncanonicalized one — a symlinked checkout, a
+ * Windows 8.3 short name, `/tmp` on macOS — makes every file look like it sits
+ * outside the project, and the analysis silently finds nothing.
+ */
+export async function resolveProjectRoot(directory: string): Promise<string> {
+  return realExistingPath(path.resolve(directory));
 }
 
 async function realExistingPath(target: string): Promise<string> {
