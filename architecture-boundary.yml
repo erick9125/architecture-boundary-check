@@ -1,0 +1,55 @@
+version: 1
+
+root: "."
+
+layers:
+  - name: core
+    paths:
+      - "src/core/**"
+
+  - name: analyzers
+    paths:
+      - "src/analyzers/**"
+
+  - name: config
+    paths:
+      - "src/config/**"
+
+  - name: cli
+    paths:
+      - "src/cli/**"
+
+  - name: api
+    paths:
+      - "src/index.ts"
+      - "src/analyze-architecture.ts"
+      - "src/version.ts"
+
+rules:
+  - from: core
+    cannotDependOn:
+      - cli
+      - analyzers
+      - config
+      - api
+
+  - from: analyzers
+    cannotDependOn:
+      - cli
+      - config
+      - api
+
+  - from: config
+    cannotDependOn:
+      - cli
+      - analyzers
+      - api
+
+cycles:
+  forbidden: true
+
+exclude:
+  - "tests/**"
+  - "examples/**"
+  - "dist/**"
+  - "node_modules/**"

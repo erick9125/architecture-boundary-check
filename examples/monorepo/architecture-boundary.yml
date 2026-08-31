@@ -1,0 +1,17 @@
+version: 1
+
+root: "."
+
+layers:
+  - name: apps
+    paths:
+      - "apps/**"
+
+  - name: packages
+    paths:
+      - "packages/**"
+
+rules:
+  - from: packages
+    cannotDependOn:
+      - apps

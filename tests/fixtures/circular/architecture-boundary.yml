@@ -1,0 +1,16 @@
+version: 1
+
+root: "src"
+
+layers:
+  - name: app
+    paths:
+      - "**"
+
+rules:
+  - from: app
+    canOnlyDependOn:
+      - app
+
+cycles:
+  forbidden: true

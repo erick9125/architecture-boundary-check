@@ -1,0 +1,27 @@
+version: 1
+
+root: "."
+
+layers:
+  - name: users
+    paths:
+      - "modules/users/**"
+
+  - name: payments
+    paths:
+      - "modules/payments/**"
+
+  - name: billing
+    paths:
+      - "modules/billing/**"
+
+  - name: shared
+    paths:
+      - "modules/shared/**"
+
+rules:
+  - from: shared
+    cannotDependOn:
+      - users
+      - payments
+      - billing

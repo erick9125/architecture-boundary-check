@@ -1,0 +1,18 @@
+version: 1
+
+root: "src"
+
+layers:
+  - name: invoices
+    paths:
+      - "invoices/**"
+
+  - name: app
+    paths:
+      - "app.ts"
+
+rules:
+  - from: app
+    canOnlyDependOn:
+      - invoices
+      - app

@@ -1,0 +1,40 @@
+version: 1
+
+root: "."
+
+layers:
+  - name: domain
+    paths:
+      - "src/domain/**"
+
+  - name: application
+    paths:
+      - "src/application/**"
+
+  - name: infrastructure
+    paths:
+      - "src/infrastructure/**"
+
+  - name: presentation
+    paths:
+      - "src/presentation/**"
+
+rules:
+  - from: domain
+    canOnlyDependOn:
+      - domain
+
+  - from: application
+    canOnlyDependOn:
+      - domain
+      - application
+
+  - from: infrastructure
+    canOnlyDependOn:
+      - domain
+      - infrastructure
+
+  - from: presentation
+    canOnlyDependOn:
+      - application
+      - presentation

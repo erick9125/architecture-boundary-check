@@ -1,0 +1,77 @@
+{
+  "name": "architecture-boundary-check",
+  "version": "0.1.0",
+  "description": "Enforce architectural boundaries and dependency rules in CI with configurable layer, module, and import constraints.",
+  "keywords": [
+    "architecture",
+    "software-architecture",
+    "typescript",
+    "javascript",
+    "static-analysis",
+    "dependency-analysis",
+    "clean-architecture",
+    "hexagonal-architecture",
+    "ci",
+    "developer-tools",
+    "code-quality",
+    "monorepo"
+  ],
+  "homepage": "https://github.com/erick9125/architecture-boundary-check",
+  "bugs": {
+    "url": "https://github.com/erick9125/architecture-boundary-check/issues"
+  },
+  "license": "MIT",
+  "author": "Erick Morales",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/erick9125/architecture-boundary-check.git"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "architecture-boundary-check": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "check": "tsx src/cli/index.ts",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "ignore": "^7.0.5",
+    "picomatch": "^4.0.3",
+    "typescript": "^5.9.2",
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.34.0",
+    "@types/node": "^24.3.0",
+    "@types/picomatch": "^4.0.1",
+    "eslint": "^9.34.0",
+    "tsx": "^4.20.5",
+    "typescript-eslint": "^8.41.0",
+    "vitest": "^3.2.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}
