@@ -173,6 +173,18 @@ async function loadGitIgnore(projectRoot: string): Promise<IgnoreFilter> {
   return ig;
 }
 
+/**
+ * Canonical form of the directory the analysis is rooted at.
+ *
+ * Discovery reports real paths, so every other stage has to measure against the
+ * real root too. Passing the uncanonicalized one — a symlinked checkout, a
+ * Windows 8.3 short name, `/tmp` on macOS — makes every file look like it sits
+ * outside the project, and the analysis silently finds nothing.
+ */
+export async function resolveProjectRoot(directory: string): Promise<string> {
+  return realExistingPath(path.resolve(directory));
+}
+
 async function realExistingPath(target: string): Promise<string> {
   try {
     return await fs.realpath(target);

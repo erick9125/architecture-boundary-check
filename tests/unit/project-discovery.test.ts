@@ -14,8 +14,12 @@ afterEach(async () => {
 });
 
 async function createProject(): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'abc-discovery-'));
-  createdRoots.push(root);
+  const created = await fs.mkdtemp(path.join(os.tmpdir(), 'abc-discovery-'));
+  createdRoots.push(created);
+
+  // Discovery reports real paths, and a temp dir is rarely its own real path:
+  // Windows runners hand back an 8.3 short name, macOS puts /tmp behind a link.
+  const root = await fs.realpath(created);
 
   await fs.mkdir(path.join(root, 'src', 'deep'), { recursive: true });
   await fs.writeFile(
