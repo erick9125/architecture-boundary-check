@@ -9,7 +9,7 @@ Initial release of Architecture Boundary Check.
 - TypeScript/JavaScript static import and `export ... from` analysis
 - `tsconfig` path alias resolution via the TypeScript Compiler API
 - Configurable layers, `cannotDependOn`, and `canOnlyDependOn`
-- Circular dependency detection with de-duplicated cycles
+- Circular dependency detection, one cycle reported per strongly connected component
 - YAML/JSON configuration with validation before analysis
 - Exceptions with optional expiry and source ignore globs
 - Console and JSON reporters

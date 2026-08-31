@@ -65,4 +65,14 @@ describe('analyzeArchitecture', () => {
     expect(result.dependenciesAnalyzed).toBe(0);
     expect(result.violations).toEqual([]);
   });
+
+  // Regression: an excluded file still entered the graph as an import target,
+  // so it produced violations and inflated the file count.
+  it('keeps excluded files out of the graph even when imported', async () => {
+    const result = await analyzeFixture('excluded-target');
+
+    expect(result.filesAnalyzed).toBe(1);
+    expect(result.dependenciesAnalyzed).toBe(0);
+    expect(result.violations).toEqual([]);
+  });
 });

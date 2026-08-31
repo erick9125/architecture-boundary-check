@@ -42,7 +42,7 @@ Esta herramienta convierte esas restricciones en un check ejecutable:
 - `import type` cuenta como dependencia
 - Capas con globs
 - `cannotDependOn` y `canOnlyDependOn` (no ambos en la misma regla)
-- Detección de ciclos, un reporte por ciclo único
+- Detección de ciclos, un ciclo reportado por componente fuertemente conexo
 - Excepciones con fecha de caducidad opcional
 - `exclude`, `ignore` y excepciones por archivo
 - Informe de terminal y JSON

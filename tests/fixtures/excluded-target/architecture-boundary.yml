@@ -1,0 +1,20 @@
+version: 1
+
+root: "src"
+
+layers:
+  - name: domain
+    paths:
+      - "domain/**"
+
+  - name: infrastructure
+    paths:
+      - "infrastructure/**"
+
+rules:
+  - from: domain
+    cannotDependOn:
+      - infrastructure
+
+exclude:
+  - "src/infrastructure/**"

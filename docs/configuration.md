@@ -61,6 +61,8 @@ exceptions:
 
 These directories are skipped even if `exclude` is omitted: `node_modules`, `dist`, `build`, `coverage`, `.git`.
 
+An excluded file leaves the analysis completely: it is not scanned, it is not counted in `Files analyzed`, and an import that resolves to it is dropped instead of being reported as a violation. Use `ignore` instead when you want a file to keep participating in the graph but stop producing violations of its own.
+
 `.gitignore` is applied when present. You do not need a complete gitignore implementation for 0.1.0, but the common ignore file is honored.
 
 `cycles.forbidden` defaults to `false`.

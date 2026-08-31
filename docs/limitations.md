@@ -26,5 +26,10 @@ Not supported yet:
 - `strictClassification` (every file must belong to a layer)
 - PHP, Java, C#, Python, Go
 - persistent caches and worker pools
+- enumerating every elementary cycle inside a strongly connected component
 
-Symlinks that resolve outside the project root are ignored so analysis cannot walk arbitrary filesystem locations.
+Cycles are reported one per strongly connected component rather than one per elementary cycle. If `a → b → c → a` and `a → c → a` both exist, they are the same component and appear once: breaking the component is a single piece of work, and the number of elementary cycles in a dense component grows exponentially.
+
+Symlinks that resolve outside the project root are ignored so analysis cannot walk arbitrary filesystem locations. A link that resolves back inside the project is followed at most once, so a link pointing at one of its own ancestors cannot loop.
+
+`exclude` removes a file from the analysis entirely. An excluded file is not scanned, and an import that resolves to it is dropped rather than reported, the same way an import of an external package is.
