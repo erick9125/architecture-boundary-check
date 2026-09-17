@@ -42,12 +42,30 @@ export class LayerResolver {
     return result;
   }
 
+  /**
+   * Globs are matched against the path relative to `root` first, and only when
+   * nothing matches at all against the project-relative path, so both
+   * `domain/**` and `src/domain/**` styles keep working.
+   *
+   * The two forms are tried in separate passes on purpose. Testing both at once
+   * let two different layers match through two different normalizations —
+   * `src/**` against one form and `domain/**` against the other — and the file
+   * was rejected as ambiguous when only one layer really claimed it.
+   */
   private matchingLayers(filePath: string): string[] {
-    const relative = this.toMatchPath(filePath);
+    const rootRelative = this.matchesFor(this.toMatchPath(filePath));
+    if (rootRelative.length > 0) {
+      return rootRelative;
+    }
+
+    return this.matchesFor(normalizeRelativePath(filePath));
+  }
+
+  private matchesFor(candidate: string): string[] {
     const matches: string[] = [];
 
     for (const matcher of this.matchers) {
-      if (matcher.match(relative) || matcher.match(normalizeRelativePath(filePath))) {
+      if (matcher.match(candidate)) {
         matches.push(matcher.name);
       }
     }

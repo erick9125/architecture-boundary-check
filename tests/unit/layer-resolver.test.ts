@@ -39,4 +39,42 @@ describe('LayerResolver', () => {
       MultipleLayerMatchError,
     );
   });
+
+  it('matches project-relative globs when nothing matches under the root', () => {
+    const projectStyle = new LayerResolver(
+      [{ name: 'domain', patterns: ['src/domain/**'] }],
+      'src',
+    );
+
+    expect(projectStyle.resolve('src/domain/order.ts')).toBe('domain');
+  });
+
+  // Regression: both forms were tested in one pass, so `src/**` matched the
+  // project-relative path while `domain/**` matched the root-relative one and
+  // the file was rejected as ambiguous though only one layer really claims it.
+  it('does not report ambiguity across the two path forms', () => {
+    const mixedStyles = new LayerResolver(
+      [
+        { name: 'all-src', patterns: ['src/**'] },
+        { name: 'domain', patterns: ['domain/**'] },
+      ],
+      'src',
+    );
+
+    expect(mixedStyles.resolve('src/domain/order.ts')).toBe('domain');
+  });
+
+  it('still throws when two layers claim the same root-relative path', () => {
+    const genuinelyAmbiguous = new LayerResolver(
+      [
+        { name: 'domain', patterns: ['domain/**'] },
+        { name: 'orders', patterns: ['**/orders/**'] },
+      ],
+      'src',
+    );
+
+    expect(() => genuinelyAmbiguous.resolve('src/domain/orders/order.ts')).toThrow(
+      MultipleLayerMatchError,
+    );
+  });
 });

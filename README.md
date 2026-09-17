@@ -208,6 +208,8 @@ layers:
       - "src/domain/**"
 ```
 
+Globs are matched relative to `root` first, and retried against the project-relative path only when no layer matches at all.
+
 A file belongs to at most one layer. Matching two layers is a configuration error (exit `2`). A file that matches none is **unclassified** and is not a violation in 0.1.0.
 
 Use **either** `cannotDependOn` **or** `canOnlyDependOn` on a given rule:

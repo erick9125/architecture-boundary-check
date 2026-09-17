@@ -183,6 +183,8 @@ El CLI busca, en este orden:
 
 `root` es el directorio a escanear. Los globs de capa se resuelven respecto a ese root.
 
+Los globs se resuelven primero respecto a `root`, y solo se reintentan contra la ruta relativa al proyecto si ninguna capa coincide.
+
 Un archivo pertenece a una sola capa. Si coincide con dos, es error de configuración (salida `2`). Si no coincide con ninguna queda **sin clasificar**; en 0.1.0 eso no es violación.
 
 En cada regla usa **o** `cannotDependOn` **o** `canOnlyDependOn`, nunca ambos:
