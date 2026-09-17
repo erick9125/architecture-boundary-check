@@ -55,7 +55,9 @@ exceptions:
     expires: "2026-12-31"
 ```
 
-`root` is resolved from the process working directory. Layer globs are matched against the path relative to `root`, and also against the project-relative path so both `domain/**` and `src/domain/**` styles work.
+`root` is resolved from the process working directory, then to its real path, so a symlinked checkout is analyzed the same as the directory it points at.
+
+Layer globs are matched against the path relative to `root` first. Only if no layer matches at all are they retried against the project-relative path, so both `domain/**` and `src/domain/**` styles work. The two forms are never mixed within one decision: a file is ambiguous only when two layers claim the same form, not when each claims a different one.
 
 ## Defaults
 
@@ -80,3 +82,6 @@ Reported before analysis:
 - expired exception
 - missing configuration file
 - a source file matching more than one layer
+- a `tsconfig.json` whose compiler options fail to parse
+
+An unusable `tsconfig.json` stops the run rather than being ignored. Its options are what resolve `baseUrl` and `paths` aliases, so continuing without them would drop every aliased import from the graph and report a clean architecture because the analysis stopped seeing the dependencies. Diagnostics about which files the config selects are not errors here: the analyzer supplies its own file list, so a project-references stub with `"files": []` is analyzed normally.
