@@ -1,0 +1,25 @@
+version: 1
+
+root: "src"
+
+layers:
+  - name: domain
+    paths:
+      - "domain/**"
+
+  - name: infrastructure
+    paths:
+      - "infrastructure/**"
+
+rules:
+  - from: domain
+    cannotDependOn:
+      - infrastructure
+
+exceptions:
+  - from: domain
+    to: infrastructure
+    files:
+      - "src/domain/legacy.ts"
+    reason: "Legacy adapter pending migration"
+    expires: "2099-12-31"

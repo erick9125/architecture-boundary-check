@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "root": "src",
+  "layers": [
+    { "name": "domain", "paths": ["domain/**"] },
+    { "name": "application", "paths": ["application/**"] }
+  ],
+  "rules": [
+    { "from": "domain", "cannotDependOn": ["application"] }
+  ]
+}
