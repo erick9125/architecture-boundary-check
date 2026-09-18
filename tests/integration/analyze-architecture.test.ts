@@ -75,4 +75,34 @@ describe('analyzeArchitecture', () => {
     expect(result.dependenciesAnalyzed).toBe(0);
     expect(result.violations).toEqual([]);
   });
+
+  // Exception matching had only ever been checked against a hand-built model.
+  // This runs it the way a user does: a real config file, a real project.
+  it('suppresses only the files an exception covers', async () => {
+    const result = await analyzeFixture('exceptions');
+
+    expect(result.violations).toHaveLength(1);
+    expect(result.violations[0]?.sourceFile).toBe('src/domain/order.ts');
+    expect(result.dependenciesAnalyzed).toBe(2);
+  });
+
+  it('refuses to run with an expired exception', () => {
+    const root = fixtureDir('expired-exception');
+
+    expect(() =>
+      loadConfigFile(path.join(root, 'architecture-boundary.yml')),
+    ).toThrow(/expired/);
+  });
+
+  // Every other fixture is pure .ts, which left the .tsx, .jsx and .js
+  // branches of scriptKindFor unexercised.
+  it('analyzes tsx, jsx and js sources alongside ts', async () => {
+    const result = await analyzeFixture('mixed-languages');
+
+    expect(result.filesAnalyzed).toBe(5);
+    expect(result.dependenciesAnalyzed).toBe(3);
+    expect(result.violations).toHaveLength(1);
+    expect(result.violations[0]?.sourceFile).toBe('src/application/panel.jsx');
+    expect(result.violations[0]?.targetFile).toBe('src/infrastructure/legacy.js');
+  });
 });

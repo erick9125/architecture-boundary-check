@@ -1,5 +1,3 @@
-import { z } from 'zod';
+import { parse } from 'yaml';
 
-export const OrderSchema = z.object({
-  id: z.string(),
-});
+export const seedOrder = parse('id: seed') as { id: string };
