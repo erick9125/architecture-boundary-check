@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { formatConsoleReport, hasFailures } from '../../src/cli/output/console-reporter.js';
+import { formatConsoleReport } from '../../src/cli/output/console-reporter.js';
+import { hasFailures } from '../../src/cli/output/verdict.js';
 import type { ArchitectureConfig } from '../../src/config/config.js';
 
 const config: ArchitectureConfig = {

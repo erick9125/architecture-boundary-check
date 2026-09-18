@@ -310,6 +310,7 @@ architecture-boundary-check --format json
 
 ```json
 {
+  "passed": false,
   "files": 284,
   "dependencies": 931,
   "violations": [
@@ -324,7 +325,8 @@ architecture-boundary-check --format json
       "column": 1
     }
   ],
-  "cycles": []
+  "cycles": [],
+  "cyclesForbidden": false
 }
 ```
 

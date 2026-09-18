@@ -7,6 +7,23 @@ export interface ValidateConfigOptions {
   readonly now?: Date;
 }
 
+const ROOT_KEYS = [
+  'version',
+  'root',
+  'layers',
+  'rules',
+  'cycles',
+  'exclude',
+  'ignore',
+  'exceptions',
+] as const;
+
+const LAYER_KEYS = ['name', 'paths'] as const;
+const RULE_KEYS = ['from', 'cannotDependOn', 'canOnlyDependOn'] as const;
+const EXCEPTION_KEYS = ['from', 'to', 'files', 'source', 'reason', 'expires'] as const;
+const IGNORE_KEYS = ['source'] as const;
+const CYCLES_KEYS = ['forbidden'] as const;
+
 export function validateConfig(
   value: unknown,
   options: ValidateConfigOptions = {},
@@ -14,6 +31,8 @@ export function validateConfig(
   if (!isRecord(value)) {
     throw new ConfigurationError('Configuration must be a YAML or JSON object.');
   }
+
+  assertKnownKeys(value, ROOT_KEYS, '');
 
   if (value.version !== 1) {
     throw new ConfigurationError('Configuration version must be 1.');
@@ -57,6 +76,8 @@ function parseLayers(value: unknown): LayerConfig[] {
       throw new ConfigurationError(`layers[${index}] must be an object.`);
     }
 
+    assertKnownKeys(item, LAYER_KEYS, `layers[${index}]`);
+
     const name = parseRequiredString(item.name, `layers[${index}].name`);
     if (names.has(name)) {
       throw new ConfigurationError(`Duplicate layer name: ${name}.`);
@@ -98,6 +119,8 @@ function parseRules(
     if (!isRecord(item)) {
       throw new ConfigurationError(`rules[${index}] must be an object.`);
     }
+
+    assertKnownKeys(item, RULE_KEYS, `rules[${index}]`);
 
     const from = parseRequiredString(item.from, `rules[${index}].from`);
     assertKnownLayer(from, layerNames, `rules[${index}].from`);
@@ -171,6 +194,8 @@ function parseExceptions(
       throw new ConfigurationError(`exceptions[${index}] must be an object.`);
     }
 
+    assertKnownKeys(item, EXCEPTION_KEYS, `exceptions[${index}]`);
+
     const from = parseRequiredString(item.from, `exceptions[${index}].from`);
     const to = parseRequiredString(item.to, `exceptions[${index}].to`);
     assertKnownLayer(from, layerNames, `exceptions[${index}].from`);
@@ -182,11 +207,7 @@ function parseExceptions(
     const expires = parseOptionalString(item.expires, `exceptions[${index}].expires`);
 
     if (expires !== undefined) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(expires)) {
-        throw new ConfigurationError(
-          `exceptions[${index}].expires must use YYYY-MM-DD.`,
-        );
-      }
+      assertCalendarDate(expires, `exceptions[${index}].expires`);
 
       if (isExpired(expires, now)) {
         throw new ConfigurationError(
@@ -220,6 +241,8 @@ function parseIgnore(value: unknown): IgnorePattern[] | undefined {
       throw new ConfigurationError(`ignore[${index}] must be an object.`);
     }
 
+    assertKnownKeys(item, IGNORE_KEYS, `ignore[${index}]`);
+
     return {
       source: parseRequiredString(item.source, `ignore[${index}].source`),
     };
@@ -234,6 +257,8 @@ function parseCycles(value: unknown): { forbidden: boolean } | undefined {
   if (!isRecord(value)) {
     throw new ConfigurationError('cycles must be an object.');
   }
+
+  assertKnownKeys(value, CYCLES_KEYS, 'cycles');
 
   if (value.forbidden !== undefined && typeof value.forbidden !== 'boolean') {
     throw new ConfigurationError('cycles.forbidden must be a boolean.');
@@ -279,6 +304,60 @@ function assertKnownLayer(
 ): void {
   if (!layerNames.has(name)) {
     throw new ConfigurationError(`${label} references unknown layer: ${name}.`);
+  }
+}
+
+/**
+ * Rejects keys the validator does not read.
+ *
+ * Ignoring them silently is how a typo passes a build: `excludes` instead of
+ * `exclude` drops the exclusions and the run still reports success, and a
+ * misspelled `files` on an exception drops its file filter, widening a
+ * one-file exception into an amnesty for the whole layer pair. Both fail by
+ * being more permissive, which is the direction nobody notices.
+ */
+function assertKnownKeys(
+  value: Record<string, unknown>,
+  allowed: readonly string[],
+  label: string,
+): void {
+  const known = new Set(allowed);
+  const unknown = Object.keys(value).filter((key) => !known.has(key));
+
+  if (unknown.length === 0) {
+    return;
+  }
+
+  const where = label === '' ? 'Configuration' : label;
+  const noun = unknown.length === 1 ? 'key' : 'keys';
+
+  throw new ConfigurationError(
+    `${where} has unknown ${noun}: ${unknown.sort().join(', ')}. Expected one of: ${[...allowed].sort().join(', ')}.`,
+  );
+}
+
+/**
+ * A date that matches the shape but not the calendar is worse than one that
+ * matches neither: `2026-13-45` never sorts before the current date, so the
+ * exception it guards never expires and the deadline its author wrote down
+ * quietly becomes permanent.
+ */
+function assertCalendarDate(value: string, label: string): void {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    throw new ConfigurationError(`${label} must use YYYY-MM-DD.`);
+  }
+
+  const [, year, month, day] = match;
+  const parsed = new Date(`${value}T00:00:00Z`);
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getUTCFullYear() !== Number(year) ||
+    parsed.getUTCMonth() + 1 !== Number(month) ||
+    parsed.getUTCDate() !== Number(day)
+  ) {
+    throw new ConfigurationError(`${label} is not a real date: ${value}.`);
   }
 }
 

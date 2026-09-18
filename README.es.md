@@ -229,7 +229,7 @@ ignore:
 exceptions:
   - from: domain
     to: infrastructure
-    source:
+    files:
       - "src/domain/legacy/**"
     reason: "Migración legacy"
     expires: "2026-12-31"
@@ -254,6 +254,7 @@ architecture-boundary-check --format json
 
 ```json
 {
+  "passed": false,
   "files": 284,
   "dependencies": 931,
   "violations": [
@@ -267,7 +268,8 @@ architecture-boundary-check --format json
       "column": 1
     }
   ],
-  "cycles": []
+  "cycles": [],
+  "cyclesForbidden": false
 }
 ```
 

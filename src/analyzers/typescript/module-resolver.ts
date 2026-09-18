@@ -8,12 +8,14 @@ export function resolveImportedModule(
   compilerOptions: ts.CompilerOptions,
   host: ts.ModuleResolutionHost,
   projectRoot: string,
+  cache?: ts.ModuleResolutionCache,
 ): string | undefined {
   const result = ts.resolveModuleName(
     specifier,
     containingFile,
     compilerOptions,
     host,
+    cache,
   );
 
   const resolved = result.resolvedModule?.resolvedFileName;

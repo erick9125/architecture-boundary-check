@@ -33,3 +33,7 @@ Cycles are reported one per strongly connected component rather than one per ele
 Symlinks that resolve outside the project root are ignored so analysis cannot walk arbitrary filesystem locations. A link that resolves back inside the project is followed at most once, so a link pointing at one of its own ancestors cannot loop.
 
 `exclude` removes a file from the analysis entirely. An excluded file is not scanned, and an import that resolves to it is dropped rather than reported, the same way an import of an external package is.
+
+Default directory exclusions are fixed. `node_modules`, `dist`, `build`, `coverage` and `.git` are skipped wherever they appear in the tree, not only at the project root, and no configuration turns that off. A project with a legitimate module directory named `build` or `dist` will not see those files analyzed. Making the defaults overridable means deciding how they compose with `exclude` and `.gitignore`, which is a change 0.1.0 does not make.
+
+The JSON report states the verdict in `passed`. Deriving it from the report alone is not possible otherwise: a forbidden cycle fails a run whose `violations` array is empty, and the setting that decides it lives in the configuration rather than the report.

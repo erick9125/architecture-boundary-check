@@ -52,7 +52,9 @@ export async function discoverSourceFiles(
 
   const files: string[] = [];
   await walk(scanRootReal, projectRoot, gitIgnore, exclude, files);
-  return files.sort();
+  // A file reachable both directly and through a link would otherwise be
+  // analyzed twice and counted twice.
+  return [...new Set(files)].sort();
 }
 
 /**
@@ -114,7 +116,10 @@ async function walk(
         if (stats.isDirectory()) {
           await enqueueDirectory(realPath, visited, pending);
         } else if (stats.isFile() && isSourceFile(realPath)) {
-          files.push(fullPath);
+          // The real path, not the link path. The analyzer resolves every import
+          // target to its real path, so a file recorded under its link would never
+          // match one, and every edge into it would be dropped in silence.
+          files.push(realPath);
         }
 
         continue;
