@@ -2,6 +2,7 @@ import type { ArchitectureConfig } from '../../config/config.js';
 import type { ArchitectureAnalysisResult } from '../../core/results/analysis-result.js';
 import type { ArchitectureViolation } from '../../core/results/violation.js';
 import type { DependencyCycle } from '../../core/graph/dependency-cycle.js';
+import { hasFailures } from './verdict.js';
 
 export function formatConsoleReport(
   result: ArchitectureAnalysisResult,
@@ -41,17 +42,6 @@ export function formatConsoleReport(
   }
 
   return `${lines.join('\n')}\n`;
-}
-
-export function hasFailures(
-  result: ArchitectureAnalysisResult,
-  config: ArchitectureConfig,
-): boolean {
-  if (result.violations.length > 0) {
-    return true;
-  }
-
-  return config.cycles?.forbidden === true && result.cycles.length > 0;
 }
 
 function formatViolation(violation: ArchitectureViolation): string {

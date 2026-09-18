@@ -35,4 +35,34 @@ describe('DependencyGraph', () => {
 
     expect(graph.getNode('src/domain/order.ts')?.file).toBe('src/domain/order.ts');
   });
+
+  // Deduplication moved to a set for speed. The array it mirrors is still what
+  // callers iterate, and the cycle report depends on that order not drifting.
+  it('keeps adjacency in insertion order while deduplicating', () => {
+    const graph = new DependencyGraph();
+    const edge = { specifier: './x', kind: 'static-import' } as const;
+
+    graph.addDependency('src/a.ts', 'src/z.ts', edge);
+    graph.addDependency('src/a.ts', 'src/b.ts', edge);
+    graph.addDependency('src/a.ts', 'src/z.ts', edge);
+    graph.addDependency('src/a.ts', 'src/m.ts', edge);
+
+    expect(graph.getAdjacency('src/a.ts')).toEqual([
+      'src/z.ts',
+      'src/b.ts',
+      'src/m.ts',
+    ]);
+  });
+
+  it('tracks adjacency per source file', () => {
+    const graph = new DependencyGraph();
+    const edge = { specifier: './x', kind: 'static-import' } as const;
+
+    graph.addDependency('src/a.ts', 'src/shared.ts', edge);
+    graph.addDependency('src/b.ts', 'src/shared.ts', edge);
+
+    expect(graph.getAdjacency('src/a.ts')).toEqual(['src/shared.ts']);
+    expect(graph.getAdjacency('src/b.ts')).toEqual(['src/shared.ts']);
+    expect(graph.getAdjacency('src/shared.ts')).toEqual([]);
+  });
 });

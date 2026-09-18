@@ -4,7 +4,8 @@ import { loadConfigFromDirectory } from '../../config/loader.js';
 import { ConfigurationError } from '../../config/errors.js';
 import { ArchitectureEngineError } from '../../core/errors.js';
 import { EXIT_ERROR, EXIT_SUCCESS, EXIT_VIOLATIONS } from '../exit-codes.js';
-import { formatConsoleReport, hasFailures } from '../output/console-reporter.js';
+import { formatConsoleReport } from '../output/console-reporter.js';
+import { hasFailures } from '../output/verdict.js';
 import { formatJsonReport } from '../output/json-reporter.js';
 
 export type OutputFormat = 'console' | 'json';
@@ -43,7 +44,7 @@ function render(
   format: OutputFormat,
 ): string {
   if (format === 'json') {
-    return formatJsonReport(result);
+    return formatJsonReport(result, config);
   }
 
   return formatConsoleReport(result, config);

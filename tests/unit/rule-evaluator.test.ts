@@ -115,4 +115,91 @@ describe('RuleEvaluator', () => {
 
     expect(violations).toEqual([]);
   });
+
+  // Two rules can forbid the same pair — a duplicate, or one list that is a
+  // superset of another. The edge is still one edge, and describing it twice
+  // inflates the count without adding information.
+  it('reports one violation when two rules forbid the same pair', () => {
+    const graph = new DependencyGraph();
+    graph.addDependency(
+      'src/application/create-order.ts',
+      'src/infrastructure/order.repository.ts',
+      { specifier: '../infrastructure/order.repository', kind: 'static-import' },
+    );
+
+    const violations = evaluate(
+      graph,
+      createModel({
+        rules: [
+          { from: 'application', cannotDependOn: ['infrastructure'] },
+          { from: 'application', cannotDependOn: ['infrastructure', 'domain'] },
+        ],
+      }),
+    );
+
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.rule).toBe('application cannot depend on infrastructure');
+  });
+
+  it('keeps both reports when two rules describe the edge differently', () => {
+    const graph = new DependencyGraph();
+    graph.addDependency(
+      'src/application/create-order.ts',
+      'src/infrastructure/order.repository.ts',
+      { specifier: '../infrastructure/order.repository', kind: 'static-import' },
+    );
+
+    const violations = evaluate(
+      graph,
+      createModel({
+        rules: [
+          { from: 'application', cannotDependOn: ['infrastructure'] },
+          { from: 'application', canOnlyDependOn: ['domain'] },
+        ],
+      }),
+    );
+
+    expect(violations).toHaveLength(2);
+    expect(new Set(violations.map((violation) => violation.rule)).size).toBe(2);
+  });
+
+  // `files` is the documented field and `source` the accepted alias. They have
+  // always behaved the same; the tests say so now.
+  it('honors an exception declared with files', () => {
+    expect(
+      exceptionViolations({ files: ['src/application/legacy.ts'] }),
+    ).toEqual([]);
+  });
+
+  it('honors an exception declared with the source alias', () => {
+    expect(
+      exceptionViolations({ source: ['src/application/legacy.ts'] }),
+    ).toEqual([]);
+  });
+
+  it('still reports a file the exception does not cover', () => {
+    expect(
+      exceptionViolations({ files: ['src/application/other.ts'] }),
+    ).toHaveLength(1);
+  });
 });
+
+function exceptionViolations(
+  patterns: { files?: string[]; source?: string[] },
+) {
+  const graph = new DependencyGraph();
+  graph.addDependency(
+    'src/application/legacy.ts',
+    'src/infrastructure/order.repository.ts',
+    { specifier: '../infrastructure/order.repository', kind: 'static-import' },
+  );
+
+  return evaluate(
+    graph,
+    createModel({
+      exceptions: [
+        { from: 'application', to: 'infrastructure', ...patterns },
+      ],
+    }),
+  );
+}

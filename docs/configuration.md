@@ -49,7 +49,7 @@ ignore:
 exceptions:
   - from: domain
     to: infrastructure
-    source:
+    files:
       - "src/domain/legacy/**"
     reason: "Legacy migration"
     expires: "2026-12-31"
@@ -59,9 +59,11 @@ exceptions:
 
 Layer globs are matched against the path relative to `root` first. Only if no layer matches at all are they retried against the project-relative path, so both `domain/**` and `src/domain/**` styles work. The two forms are never mixed within one decision: a file is ambiguous only when two layers claim the same form, not when each claims a different one.
 
+An exception limits itself to particular files with `files`. `source` is accepted as an alias for the same list, because earlier documentation used that name; `files` is the one to write in new configuration. Unknown keys anywhere in the file are rejected rather than ignored, so a misspelled `files` fails the run instead of quietly widening the exception to the whole layer pair.
+
 ## Defaults
 
-These directories are skipped even if `exclude` is omitted: `node_modules`, `dist`, `build`, `coverage`, `.git`.
+These directories are skipped even if `exclude` is omitted: `node_modules`, `dist`, `build`, `coverage`, `.git`. The skip applies at every depth and cannot be turned off in 0.1.0, so a legitimate module directory that happens to be named `build` is left out of the analysis. See [limitations](limitations.md).
 
 An excluded file leaves the analysis completely: it is not scanned, it is not counted in `Files analyzed`, and an import that resolves to it is dropped instead of being reported as a violation. Use `ignore` instead when you want a file to keep participating in the graph but stop producing violations of its own.
 

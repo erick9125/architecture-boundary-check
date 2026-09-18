@@ -14,15 +14,38 @@ import {
   matchesCannotDependOn,
 } from './cannot-depend-on.rule.js';
 
+interface CompiledException {
+  readonly from: string;
+  readonly to: string;
+  readonly coversFile: (sourceFile: string) => boolean;
+}
+
 export function evaluateRules(
   graph: DependencyGraph,
   model: ArchitectureModel,
   resolver: LayerResolver,
 ): readonly ArchitectureViolation[] {
   const violations: ArchitectureViolation[] = [];
+  const reported = new Set<string>();
   const ignoreMatchers = model.ignore.map((pattern) =>
     picomatch(pattern.source, { dot: true }),
   );
+  const exceptions = model.exceptions.map(compileException);
+
+  const report = (violation: ArchitectureViolation): void => {
+    // One dependency can match several rules — two rules sharing a `from`, or
+    // one list that is a superset of another — and every one of them describes
+    // it the same way. Counting that edge twice inflates the report without
+    // telling the reader anything new. Rules whose descriptions differ still
+    // both appear: that is two distinct pieces of information about one edge.
+    const identity = identify(violation);
+    if (reported.has(identity)) {
+      return;
+    }
+
+    reported.add(identity);
+    violations.push(violation);
+  };
 
   for (const dependency of graph.getDependencies()) {
     if (ignoreMatchers.some((match) => match(dependency.source))) {
@@ -40,11 +63,11 @@ export function evaluateRules(
 
     for (const rule of matchingRules) {
       if (matchesCannotDependOn(rule, targetLayer)) {
-        if (isExcepted(model.exceptions, sourceLayer, targetLayer, dependency.source)) {
+        if (isExcepted(exceptions, sourceLayer, targetLayer, dependency.source)) {
           continue;
         }
 
-        violations.push(
+        report(
           toViolation(
             dependency,
             sourceLayer,
@@ -55,11 +78,11 @@ export function evaluateRules(
       }
 
       if (matchesCanOnlyDependOn(rule, targetLayer)) {
-        if (isExcepted(model.exceptions, sourceLayer, targetLayer, dependency.source)) {
+        if (isExcepted(exceptions, sourceLayer, targetLayer, dependency.source)) {
           continue;
         }
 
-        violations.push(
+        report(
           toViolation(
             dependency,
             sourceLayer,
@@ -74,30 +97,61 @@ export function evaluateRules(
   return violations;
 }
 
+/**
+ * Builds each exception's file matcher once.
+ *
+ * Compiling a glob is not free, and doing it inside the dependency loop paid
+ * that cost again for every edge in the project. The ignore patterns above are
+ * compiled the same way, once, for the same reason.
+ *
+ * `files` is the documented field. `source` is kept as an accepted alias: it
+ * appeared in earlier documentation, and silently ignoring it would widen the
+ * exception to the whole layer pair rather than fail.
+ */
+function compileException(exception: ArchitectureException): CompiledException {
+  const patterns = [...(exception.files ?? []), ...(exception.source ?? [])];
+
+  if (patterns.length === 0) {
+    return { from: exception.from, to: exception.to, coversFile: () => true };
+  }
+
+  const matchers = patterns.map((pattern) => picomatch(pattern, { dot: true }));
+
+  return {
+    from: exception.from,
+    to: exception.to,
+    coversFile: (sourceFile) => matchers.some((match) => match(sourceFile)),
+  };
+}
+
 function isExcepted(
-  exceptions: readonly ArchitectureException[],
+  exceptions: readonly CompiledException[],
   sourceLayer: string,
   targetLayer: string,
   sourceFile: string,
 ): boolean {
-  return exceptions.some((exception) => {
-    if (exception.from !== sourceLayer || exception.to !== targetLayer) {
-      return false;
-    }
+  return exceptions.some(
+    (exception) =>
+      exception.from === sourceLayer &&
+      exception.to === targetLayer &&
+      exception.coversFile(sourceFile),
+  );
+}
 
-    const filePatterns = [
-      ...(exception.source ?? []),
-      ...(exception.files ?? []),
-    ];
-
-    if (filePatterns.length === 0) {
-      return true;
-    }
-
-    return filePatterns.some((pattern) =>
-      picomatch(pattern, { dot: true })(sourceFile),
-    );
-  });
+/**
+ * A violation identity that two rules describing the same edge the same way
+ * will agree on. JSON quoting keeps the parts apart without inventing a
+ * separator that a path or a rule sentence could contain.
+ */
+function identify(violation: ArchitectureViolation): string {
+  return JSON.stringify([
+    violation.sourceFile,
+    violation.targetFile,
+    violation.importSpecifier,
+    violation.line ?? null,
+    violation.column ?? null,
+    violation.rule,
+  ]);
 }
 
 function toViolation(

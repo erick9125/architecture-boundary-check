@@ -92,4 +92,22 @@ describe('discoverSourceFiles', () => {
     expect(files).toHaveLength(1);
     expect(new Set(files).size).toBe(files.length);
   });
+
+  // A file recorded under its link path never matches an import, because the
+  // analyzer resolves every target to its real path. The edge would vanish.
+  it('reports a linked source file by its real path', async () => {
+    const root = await createProject();
+    const linked = await tryLink(
+      path.join(root, 'src', 'deep', 'a.ts'),
+      path.join(root, 'src', 'alias.ts'),
+    );
+
+    if (!linked) {
+      return;
+    }
+
+    const files = await discoverSourceFiles({ projectRoot: root, scanRoot: '.' });
+
+    expect(relativePaths(root, files)).toEqual(['src/deep/a.ts']);
+  });
 });
