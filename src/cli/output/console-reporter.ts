@@ -12,6 +12,11 @@ export function formatConsoleReport(
     'Architecture Boundary Check',
     '',
     padLabel('Files analyzed', result.filesAnalyzed),
+    // Next to the file count on purpose. `Layers` below counts what the
+    // configuration declares, not what the run found, so without this line
+    // there is no number that separates a check doing its job from one whose
+    // globs quietly claim nothing.
+    padLabel('Files classified', result.filesClassified),
     padLabel('Dependencies', result.dependenciesAnalyzed),
     padLabel('Layers', config.layers.length),
     padLabel('Rules', config.rules.length),

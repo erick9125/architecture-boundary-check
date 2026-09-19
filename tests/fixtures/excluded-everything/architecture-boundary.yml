@@ -1,0 +1,19 @@
+version: 1
+
+layers:
+  - name: domain
+    paths:
+      - "src/domain/**"
+
+  - name: infrastructure
+    paths:
+      - "src/infrastructure/**"
+
+rules:
+  - from: domain
+    cannotDependOn:
+      - infrastructure
+
+# Wide enough to cover every source file in the project.
+exclude:
+  - "src/**"

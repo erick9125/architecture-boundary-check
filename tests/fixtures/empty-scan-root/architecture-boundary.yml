@@ -1,0 +1,18 @@
+version: 1
+
+# A typo. `src` is the real source tree, so nothing is ever scanned.
+root: "sorce"
+
+layers:
+  - name: domain
+    paths:
+      - "domain/**"
+
+  - name: infrastructure
+    paths:
+      - "infrastructure/**"
+
+rules:
+  - from: domain
+    cannotDependOn:
+      - infrastructure

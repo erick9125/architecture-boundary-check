@@ -8,3 +8,4 @@ coverage
 .vscode
 .env
 .env.*
+pnpm-lock.yaml

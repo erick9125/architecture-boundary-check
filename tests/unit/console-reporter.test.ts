@@ -17,6 +17,7 @@ describe('console reporter', () => {
     const output = formatConsoleReport(
       {
         filesAnalyzed: 2,
+        filesClassified: 2,
         dependenciesAnalyzed: 1,
         violations: [
           {
@@ -41,6 +42,7 @@ describe('console reporter', () => {
       hasFailures(
         {
           filesAnalyzed: 2,
+          filesClassified: 2,
           dependenciesAnalyzed: 1,
           violations: [],
           cycles: [{ files: ['a.ts', 'b.ts'] }],
@@ -48,5 +50,26 @@ describe('console reporter', () => {
         { ...config, cycles: { forbidden: true } },
       ),
     ).toBe(true);
+  });
+});
+
+// `Layers` counts what the configuration declares. Without a count of what the
+// run actually classified, a report from an inert check is indistinguishable
+// from a report from a working one.
+describe('console reporter classification count', () => {
+  it('reports how many analyzed files landed in a layer', () => {
+    const output = formatConsoleReport(
+      {
+        filesAnalyzed: 42,
+        filesClassified: 40,
+        dependenciesAnalyzed: 109,
+        violations: [],
+        cycles: [],
+      },
+      config,
+    );
+
+    expect(output).toMatch(/Files analyzed:\s+42/);
+    expect(output).toMatch(/Files classified:\s+40/);
   });
 });

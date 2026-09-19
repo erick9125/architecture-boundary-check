@@ -55,7 +55,9 @@ exceptions:
     expires: "2026-12-31"
 ```
 
-`root` is resolved from the process working directory, then to its real path, so a symlinked checkout is analyzed the same as the directory it points at.
+`root` is resolved from the process working directory, then to its real path, so a symlinked checkout is analyzed the same as the directory it points at. Pass `--root <path>` to analyze a project other than the working directory; a relative `--config` is still resolved from the working directory, so the two can point at different places.
+
+A `root` that names a directory which does not exist is not silently empty: the run exits 2 rather than reporting a clean project it never scanned. The same applies when `exclude` covers the whole source tree, and when no layer glob claims any file while rules are configured.
 
 Layer globs are matched against the path relative to `root` first. Only if no layer matches at all are they retried against the project-relative path, so both `domain/**` and `src/domain/**` styles work. The two forms are never mixed within one decision: a file is ambiguous only when two layers claim the same form, not when each claims a different one.
 

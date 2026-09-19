@@ -55,11 +55,11 @@ Esta herramienta convierte esas restricciones en un check ejecutable:
 ## Instalación
 
 ```bash
-pnpm add -D architecture-boundary-check
+npm install --save-dev @erickmorales91/architecture-boundary-check
 ```
 
 ```bash
-npm install --save-dev architecture-boundary-check
+pnpm add -D @erickmorales91/architecture-boundary-check
 ```
 
 Requiere Node.js 20 o superior. TypeScript es dependencia de runtime del analyzer; no hace falta configurar ESLint.
@@ -154,6 +154,7 @@ Uso:
 
 Opciones:
   --config <path>   Ruta a architecture-boundary.yml
+  --root <path>     Directorio del proyecto a analizar (por defecto: el actual)
   --format <type>   console (por defecto) | json
   --help            Ayuda
   --version         Versión
@@ -161,7 +162,7 @@ Opciones:
 Códigos de salida:
   0  Éxito
   1  Violaciones de arquitectura (o ciclos prohibidos)
-  2  Error de configuración o ejecución
+  2  Error de configuración o ejecución, incluida una ejecución que no analizó nada
 ```
 
 Ejemplos:
@@ -171,7 +172,20 @@ npx architecture-boundary-check
 npx architecture-boundary-check check
 npx architecture-boundary-check check --config ./config/architecture.yaml
 npx architecture-boundary-check --format json
+npx architecture-boundary-check --root ./packages/api
 ```
+
+### Una ejecución que no analiza nada falla
+
+Si no se analiza ningún archivo, o si no se clasifica ninguno en una capa habiendo reglas
+configuradas, el comando sale con **2**, no con 0. Las dos situaciones reportan cero violaciones
+por la misma razón que un proyecto vacío, y ninguna dice nada sobre el proyecto: la primera nunca
+lo escaneó, y la segunda nunca llegó a una regla, porque las reglas se resuelven por nombre de
+capa. El mensaje nombra el `root`, las exclusiones o los globs de capa que lo explican.
+
+Las causas habituales son un `root` mal escrito, un `exclude` que cubre todo el árbol de
+fuentes, ejecutar el comando fuera de la raíz del proyecto (usar `--root`), o globs de capa que
+no coinciden con la estructura real de carpetas.
 
 El CLI busca, en este orden:
 
@@ -243,7 +257,7 @@ Esquema completo: [docs/configuration.md](docs/configuration.md). Reglas: [docs/
 
 ```yaml
 - name: Architecture boundaries
-  run: pnpm architecture-boundary-check
+  run: npx architecture-boundary-check
 ```
 
 JSON para integraciones:
@@ -296,7 +310,7 @@ npx architecture-boundary-check
 El núcleo devuelve datos. No imprime.
 
 ```ts
-import { analyzeArchitecture } from 'architecture-boundary-check';
+import { analyzeArchitecture } from '@erickmorales91/architecture-boundary-check';
 
 const result = await analyzeArchitecture({
   rootDirectory: process.cwd(),
@@ -335,7 +349,7 @@ Soportado:
 - TypeScript y JavaScript
 - `import` estático y `export ... from`
 - Rutas relativas y aliases de `tsconfig`
-- `import type`
+- `import type` (cuenta como dependencia)
 - Capas, `cannotDependOn`, `canOnlyDependOn`
 - Ciclos
 - Excepciones con caducidad opcional
@@ -360,15 +374,13 @@ Detalle: [docs/limitations.md](docs/limitations.md).
 ## Tests
 
 ```bash
-pnpm install
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-pnpm check
+npm install
+npm run check:full
 ```
 
-`pnpm check` ejecuta Architecture Boundary Check contra este repositorio.
+`npm run check:full` es la compuerta que corren CI y `prepublishOnly`: lint, typecheck, cobertura, build, la herramienta revisando su propia arquitectura, y una verificación de paquete que importa el entry point compilado, ejecuta el CLI y confirma que todos los source maps resuelven dentro de los archivos publicados.
+
+El repositorio se construye y se bloquea con npm. pnpm también funciona — `pnpm install` resuelve el mismo manifiesto — pero el lockfile versionado es `package-lock.json`.
 
 ## Roadmap
 

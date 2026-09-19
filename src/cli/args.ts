@@ -3,6 +3,7 @@ import type { OutputFormat } from './commands/check.js';
 export interface ParsedArgs {
   readonly command: 'check' | 'help' | 'version';
   readonly configPath?: string;
+  readonly rootDirectory?: string;
   readonly format: OutputFormat;
 }
 
@@ -13,6 +14,7 @@ Usage:
 
 Options:
   --config <path>   Path to architecture-boundary.yml
+  --root <path>     Project directory to analyze (default: current directory)
   --format <type>   console (default) | json
   --help            Show help
   --version         Show version
@@ -20,12 +22,13 @@ Options:
 Exit codes:
   0  Success
   1  Architecture violations (or forbidden cycles)
-  2  Configuration or execution error
+  2  Configuration or execution error, including a run that analyzed nothing
 `;
 
 export function parseArgs(argv: readonly string[]): ParsedArgs {
   const args = argv.slice(2);
   let configPath: string | undefined;
+  let rootDirectory: string | undefined;
   let format: OutputFormat = 'console';
 
   for (let index = 0; index < args.length; index += 1) {
@@ -59,6 +62,17 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
       continue;
     }
 
+    if (arg === '--root') {
+      rootDirectory = takeValue(args, index, '--root');
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--root=')) {
+      rootDirectory = requireNonEmpty(arg.slice('--root='.length), '--root');
+      continue;
+    }
+
     if (arg === '--format') {
       format = parseFormat(takeValue(args, index, '--format'));
       index += 1;
@@ -77,6 +91,7 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
     command: 'check',
     format,
     ...(configPath !== undefined ? { configPath } : {}),
+    ...(rootDirectory !== undefined ? { rootDirectory } : {}),
   };
 }
 

@@ -55,11 +55,11 @@ It is **not** ESLint. It does not care about quotes, unused variables, or naming
 ## Installation
 
 ```bash
-pnpm add -D architecture-boundary-check
+npm install --save-dev @erickmorales91/architecture-boundary-check
 ```
 
 ```bash
-npm install --save-dev architecture-boundary-check
+pnpm add -D @erickmorales91/architecture-boundary-check
 ```
 
 Requires Node.js 20 or newer. TypeScript is a runtime dependency of the analyzer; you do not need to configure ESLint.
@@ -163,6 +163,7 @@ Usage:
 
 Options:
   --config <path>   Path to architecture-boundary.yml
+  --root <path>     Project directory to analyze (default: current directory)
   --format <type>   console (default) | json
   --help            Show help
   --version         Show version
@@ -170,7 +171,7 @@ Options:
 Exit codes:
   0  Success
   1  Architecture violations (or forbidden cycles)
-  2  Configuration or execution error
+  2  Configuration or execution error, including a run that analyzed nothing
 ```
 
 Examples:
@@ -180,7 +181,20 @@ npx architecture-boundary-check
 npx architecture-boundary-check check
 npx architecture-boundary-check check --config ./config/architecture.yaml
 npx architecture-boundary-check --format json
+npx architecture-boundary-check --root ./packages/api
 ```
+
+### A run that analyzes nothing fails
+
+If no file is analyzed, or if no file is classified into a layer while rules are configured, the
+command exits **2** rather than 0. Both states report zero violations for the same reason an empty
+project does, and neither says anything about the project: the first never scanned it, the second
+never reached a rule, because rules are keyed on layer names. The message names the `root`, the
+exclusions or the layer globs that explain it.
+
+The usual causes are a misspelled `root`, an `exclude` that covers the whole source tree, running
+the command outside the project root (pass `--root`), or layer globs that do not match the real
+directory layout.
 
 The CLI looks for, in order:
 
@@ -292,14 +306,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          cache: npm
+      - run: npm ci
       - name: Architecture boundaries
-        run: pnpm architecture-boundary-check
+        run: npx architecture-boundary-check
 ```
 
 JSON for dashboards or custom reporters:
@@ -374,7 +387,7 @@ npx architecture-boundary-check
 The core returns data. It does not print.
 
 ```ts
-import { analyzeArchitecture } from 'architecture-boundary-check';
+import { analyzeArchitecture } from '@erickmorales91/architecture-boundary-check';
 
 const result = await analyzeArchitecture({
   rootDirectory: process.cwd(),
@@ -442,15 +455,13 @@ Details: [docs/limitations.md](docs/limitations.md).
 ## Testing
 
 ```bash
-pnpm install
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-pnpm check
+npm install
+npm run check:full
 ```
 
-`pnpm check` runs Architecture Boundary Check against this repository.
+`npm run check:full` is the gate CI and `prepublishOnly` run: lint, typecheck, coverage, build, the tool checking its own architecture, and a package verification that imports the built entry point, runs the CLI, and confirms every source map resolves inside the published files.
+
+The repository is built and locked with npm. pnpm works too — `pnpm install` resolves the same manifest — but `package-lock.json` is the lockfile under version control.
 
 ## Roadmap
 

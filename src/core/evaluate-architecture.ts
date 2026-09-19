@@ -10,10 +10,22 @@ export function evaluateArchitecture(
   model: ArchitectureModel,
 ): ArchitectureAnalysisResult {
   const resolver = new LayerResolver(model.layers, model.root);
-  resolver.classify(graph.getFiles());
+  const files = graph.getFiles();
+
+  // The classification was already being computed and thrown away. Counting it
+  // is what lets a caller tell "nothing violates the rules" apart from "no file
+  // ever reached a rule".
+  const classified = resolver.classify(files);
+  let filesClassified = 0;
+  for (const layer of classified.values()) {
+    if (layer !== undefined) {
+      filesClassified += 1;
+    }
+  }
 
   return {
-    filesAnalyzed: graph.getFiles().length,
+    filesAnalyzed: files.length,
+    filesClassified,
     dependenciesAnalyzed: graph.getDependencies().length,
     violations: evaluateRules(graph, model, resolver),
     cycles: detectCycles(graph),

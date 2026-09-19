@@ -1,0 +1,16 @@
+version: 1
+
+# The source tree is `src/`, so neither glob ever claims a file.
+layers:
+  - name: domain
+    paths:
+      - "app/domain/**"
+
+  - name: infrastructure
+    paths:
+      - "app/infrastructure/**"
+
+rules:
+  - from: domain
+    cannotDependOn:
+      - infrastructure
