@@ -7,20 +7,16 @@ Thanks for considering a contribution to Architecture Boundary Check.
 Requirements:
 
 - Node.js 20 or newer
-- pnpm 10
+- npm 10 (pnpm also works; `package-lock.json` is the lockfile under version control)
 
 Useful commands:
 
 ```bash
-pnpm install
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-pnpm check
+npm install
+npm run check:full
 ```
 
-`pnpm check` runs Architecture Boundary Check against this repository.
+`npm run check:full` runs lint, typecheck, coverage, build, the tool against this repository, and the package verification. It is what CI and `prepublishOnly` run, so a green `check:full` is a green pull request.
 
 ## Pull requests
 

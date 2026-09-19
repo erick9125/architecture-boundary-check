@@ -14,6 +14,9 @@ export function formatJsonReport(
       // which is what settles it, lives in the configuration, not here.
       passed: !hasFailures(result, config),
       files: result.filesAnalyzed,
+      // `files` alone cannot tell a consumer whether the rules had anything to
+      // act on: a file no layer claims is a file no rule can reach.
+      filesClassified: result.filesClassified,
       dependencies: result.dependenciesAnalyzed,
       violations: result.violations.map((violation) => ({
         source: violation.sourceFile,

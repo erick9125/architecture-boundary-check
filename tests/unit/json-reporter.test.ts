@@ -17,6 +17,7 @@ function createResult(
 ): ArchitectureAnalysisResult {
   return {
     filesAnalyzed: 3,
+    filesClassified: 3,
     dependenciesAnalyzed: 2,
     violations: [],
     cycles: [],
@@ -79,5 +80,17 @@ describe('formatJsonReport', () => {
 
   it('ends with a newline', () => {
     expect(formatJsonReport(createResult(), createConfig()).endsWith('\n')).toBe(true);
+  });
+});
+
+describe('json reporter classification count', () => {
+  it('carries the classified count beside the file count', () => {
+    const output = report(
+      createResult({ filesAnalyzed: 42, filesClassified: 40 }),
+      createConfig(),
+    );
+
+    expect(output.files).toBe(42);
+    expect(output.filesClassified).toBe(40);
   });
 });

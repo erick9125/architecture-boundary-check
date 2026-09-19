@@ -1,5 +1,5 @@
 {
-  "name": "architecture-boundary-check",
+  "name": "@erickmorales91/architecture-boundary-check",
   "version": "0.1.0",
   "description": "Enforce architectural boundaries and dependency rules in CI with configurable layer, module, and import constraints.",
   "keywords": [
@@ -40,21 +40,27 @@
   },
   "files": [
     "dist",
+    "src",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "pnpm@10.14.0",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
-    "check": "tsx src/cli/index.ts",
-    "prepublishOnly": "pnpm build"
+    "check:architecture": "tsx src/cli/index.ts",
+    "verify:package": "node scripts/verify-package-exports.mjs",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run check:architecture && npm run verify:package",
+    "check:full": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run check:architecture && npm run verify:package",
+    "prepublishOnly": "npm run clean && npm run check:full"
   },
   "dependencies": {
     "ignore": "^7.0.5",
@@ -66,12 +72,15 @@
     "@eslint/js": "^9.34.0",
     "@types/node": "^24.3.0",
     "@types/picomatch": "^4.0.1",
+    "@vitest/coverage-v8": "^3.2.7",
     "eslint": "^9.34.0",
     "tsx": "^4.20.5",
     "typescript-eslint": "^8.41.0",
     "vitest": "^3.2.4"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

@@ -5,48 +5,44 @@ on:
     branches: [main, master]
   pull_request:
 
-permissions:
-  contents: read
-
 jobs:
-  test:
+  quality:
     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
+        # Windows is not optional here: the directory-link recursion this tool
+        # guards against only reproduces where a junction is reported as a
+        # plain directory, and CI never ran it before that bug shipped.
         os: [ubuntu-latest, windows-latest]
-        node: [20, 24]
+        node-version: [20, 22]
 
     steps:
-      - uses: actions/checkout@v7
-
-      # No `version` here on purpose: package.json already pins pnpm through
-      # `packageManager`, and declaring it twice fails with ERR_PNPM_BAD_PM_VERSION.
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
-          cache: pnpm
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run build
+      - run: npm run verify:package
 
-      - name: Install
-        run: pnpm install --frozen-lockfile
+      # Dogfooding: the tool checks its own architecture, from the build that
+      # would be published rather than from source.
+      - run: node dist/cli/index.js
 
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
-
-      - name: Package dry-run
-        run: npm pack --dry-run
-
-      - name: Architecture boundaries
-        run: node dist/cli/index.js
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm pack --dry-run

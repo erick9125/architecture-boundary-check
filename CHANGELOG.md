@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## 0.1.0 - unreleased
+## 0.1.0 - 2026-09-18
 
 Initial release of Architecture Boundary Check.
 
@@ -14,13 +14,16 @@ Initial release of Architecture Boundary Check.
 - Exceptions with optional expiry, scoped by `files`, plus `ignore` source globs
 - Console and JSON reporters, the JSON one stating the verdict in `passed`
 - Exit codes 0 (success), 1 (violations), 2 (configuration/execution error)
+- A run that analyzes nothing, or classifies nothing while rules exist, fails rather than passing
+- `--root` to analyze a project other than the working directory
 - CLI (`architecture-boundary-check` / `check`) and programmatic `analyzeArchitecture`
 - Clean Architecture, modular monolith, and monorepo examples
 - Dogfooded architecture check of this repository
+- Published as `@erickmorales91/architecture-boundary-check`; the CLI is still `architecture-boundary-check`
 
 ### Pre-release hardening
 
-Three review rounds ran against 0.1.0 before it shipped. Nothing below ever
+Four review rounds ran against 0.1.0 before it shipped. Nothing below ever
 reached a published version, but the defects are recorded because they share a
 shape worth remembering: almost every one made the tool **report a pass by
 having stopped looking**, not by finding a clean project. For a tool whose only
@@ -51,3 +54,22 @@ job is to fail when something is wrong, that is the failure mode that matters.
 - The JSON report could not express its own verdict: a forbidden cycle fails a run whose `violations` array is empty, and `cycles.forbidden` lives in the configuration. The report carries `passed` and `cyclesForbidden`.
 - `files` is the canonical exception field; `source` had been documented in its place in one of two files and stays an accepted alias.
 - Cost: exception globs were compiled once per dependency and are now compiled once; adjacency de-duplicates through a set instead of scanning an array, keeping insertion order so cycle reports stay stable; files are read through a bounded concurrency window sharing one module resolution cache.
+
+**Round four — the empty run**
+
+A last review round asked the one question the first three had not: what does
+the tool do when it analyzes *nothing*? It printed `Architecture check passed`
+and exited 0 — in four separate ways, each of them a one-line mistake that turns
+a CI gate into a no-op nobody notices.
+
+- A typo in `root` pointed the scan at a directory that does not exist. Zero files, zero violations, exit 0, forever.
+- An `exclude` glob wide enough to cover the source tree did the same.
+- `--config` pointing at another project's configuration analyzed the working directory instead, because the analysis root was always `cwd` and nothing could move it.
+- Layer globs that claim no file left every rule inert: rules are keyed on layer names, so a file no layer claims is a file no rule can reach. Six files analyzed, zero classified, exit 0.
+
+A run that analyzed nothing, or that classified nothing while rules are
+configured, is now a configuration error (exit 2) with a message naming the
+`root`, the exclusions or the layer globs that explain the emptiness. The
+reports carry `Files classified` / `filesClassified` beside the file count, so
+the difference between a working check and an inert one is visible without
+reading the configuration. `--root <path>` selects the project to analyze.

@@ -32,6 +32,26 @@ describe('parseArgs', () => {
       expected: { command: 'check', format: 'console', configPath: 'arch.yml' },
     },
     {
+      name: 'reads --root as a separate argument',
+      argv: ['--root', '../other'],
+      expected: { command: 'check', format: 'console', rootDirectory: '../other' },
+    },
+    {
+      name: 'reads --root in its inline form',
+      argv: ['--root=../other'],
+      expected: { command: 'check', format: 'console', rootDirectory: '../other' },
+    },
+    {
+      name: 'reads --root alongside --config',
+      argv: ['--root', '../other', '--config', '../other/arch.yml'],
+      expected: {
+        command: 'check',
+        format: 'console',
+        configPath: '../other/arch.yml',
+        rootDirectory: '../other',
+      },
+    },
+    {
       name: 'reads --format as a separate argument',
       argv: ['--format', 'json'],
       expected: { command: 'check', format: 'json' },
@@ -127,6 +147,21 @@ describe('parseArgs', () => {
       name: 'rejects --format followed by another flag',
       argv: ['--format', '--config', 'arch.yml'],
       message: /--format requires a value/,
+    },
+    {
+      name: 'rejects --root without a value',
+      argv: ['--root'],
+      message: /--root requires a value/,
+    },
+    {
+      name: 'rejects --root followed by another flag',
+      argv: ['--root', '--format', 'json'],
+      message: /--root requires a value/,
+    },
+    {
+      name: 'rejects an empty inline --root',
+      argv: ['--root='],
+      message: /--root requires a value/,
     },
     {
       name: 'rejects an unsupported format',

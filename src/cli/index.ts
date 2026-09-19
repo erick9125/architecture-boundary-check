@@ -25,6 +25,9 @@ async function main(argv: readonly string[]): Promise<number> {
       stdout: process.stdout,
       stderr: process.stderr,
       ...(args.configPath !== undefined ? { configPath: args.configPath } : {}),
+      ...(args.rootDirectory !== undefined
+        ? { rootDirectory: args.rootDirectory }
+        : {}),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

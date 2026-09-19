@@ -18,6 +18,7 @@ Not supported yet:
 
 - `import()` dynamic imports
 - CommonJS `require()`
+- TypeScript import-equals (`import x = require('…')`)
 - following re-export chains past the directly imported file
 - module public vs internal APIs
 - baseline / "no new violations"
@@ -35,5 +36,7 @@ Symlinks that resolve outside the project root are ignored so analysis cannot wa
 `exclude` removes a file from the analysis entirely. An excluded file is not scanned, and an import that resolves to it is dropped rather than reported, the same way an import of an external package is.
 
 Default directory exclusions are fixed. `node_modules`, `dist`, `build`, `coverage` and `.git` are skipped wherever they appear in the tree, not only at the project root, and no configuration turns that off. A project with a legitimate module directory named `build` or `dist` will not see those files analyzed. Making the defaults overridable means deciding how they compose with `exclude` and `.gitignore`, which is a change 0.1.0 does not make.
+
+A run that analyzes no file at all, or that classifies no file into a layer while rules are configured, exits 2 rather than 0. Both states report zero violations for the same reason an empty project does, and neither says anything about the project: the first never scanned it, the second never reached a rule, because rules are keyed on layer names. The message names the `root`, the exclusions or the layer globs that explain it. Analyzing a project that legitimately has no source file is therefore not supported; there is nothing for the rules to check.
 
 The JSON report states the verdict in `passed`. Deriving it from the report alone is not possible otherwise: a forbidden cycle fails a run whose `violations` array is empty, and the setting that decides it lives in the configuration rather than the report.
